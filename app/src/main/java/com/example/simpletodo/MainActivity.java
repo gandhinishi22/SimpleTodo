@@ -1,9 +1,14 @@
 package com.example.simpletodo;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -24,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String KEY_ITEM_TEXT = "item_text";
     public static final String KEY_ITEM_POSITION = "item_position";
+    public static final int EDIT_TEXT_CODE = 20;
 
     List<String> items;
     Button buttonAdd;
@@ -61,18 +67,38 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        ActivityResultLauncher<Intent> EditActivityLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+            @Override
+            public void onActivityResult(ActivityResult result) {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Intent data = result.getData();
+                    String itemText = data.getStringExtra(KEY_ITEM_TEXT);
+                    int position = data.getExtras().getInt(KEY_ITEM_POSITION);
+                    items.set(position,itemText);
+                    itemsAdapter.notifyItemChanged(position);
+                    saveItems();
+                    Toast.makeText(getApplicationContext(), "Item updated", Toast.LENGTH_SHORT).show();
+                }
+                else
+                {
+                    Log.w("MainActivity","Unknown call to the method onActivityResult");
+                }
+            }
+        });
+
         ItemsAdapter.OnClickListener onClickListener = new ItemsAdapter.OnClickListener() {
             @Override
             public void onItemClicked(int position) {
                 Log.d("MainActivity","Single click at position "+position);
                 //create the new activity
-                //Intent i = new Intent(MainActivity.this,EditActivity.class); //class of activity to go to
+                Intent i = new Intent(MainActivity.this,EditActivity.class); //class of activity to go to
 
                 //pass the data being edited (pass contents and position)
-                //i.putExtra(KEY_ITEM_TEXT,items.get(position));
-                //i.putExtra(KEY_ITEM_POSITION,position);
+                i.putExtra(KEY_ITEM_TEXT,items.get(position));
+                i.putExtra(KEY_ITEM_POSITION,position);
 
                 //display the activity
+                EditActivityLauncher.launch(i);
                 //startActivityForResult(i,)
             }
         };
